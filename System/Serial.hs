@@ -17,7 +17,7 @@
 -- just LF, others just CR, and they may return their results using a
 -- different end of line than they accept.
 
-module System.Serial (openSerial) where
+module System.Serial (openSerial, StopBits(One,Two), Parity(Even,Odd,NoParity), FlowControl(Software,NoFlowControl)) where
 
 import System.Posix.IO
 import System.Posix.Terminal

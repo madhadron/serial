@@ -9,9 +9,9 @@ author:              Frederick Ross
 maintainer:          fred.ross@epfl.ch
 build-type:          Simple
 Cabal-Version:       >=1.2
-extra-source-files: README
 
 Library
   build-depends:       base, unix, parsec
   Exposed-Modules: System.Serial System.Serial.Manager
   ghc-options:         -threaded
+
