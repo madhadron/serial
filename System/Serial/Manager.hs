@@ -12,7 +12,7 @@ import Control.Concurrent
 import Control.Concurrent.MVar
 import Control.Monad
 
-type SerialCommand = (String, Parser Bool, MVar String)
+type SerialCommand = (String, String -> Bool, MVar String)
 type SerialManager = MVar (Either SerialCommand String)
 
 -- | 'serialManager' takes produces a structure around a 'Handle' to
@@ -36,7 +36,7 @@ process h mv ws _ = do
   process' v
       where process' (Left (cmd,pr,res)) = do hPutStr h cmd
                                               return $ ws ++ [(cmd,pr,res)]
-            process' (Right str) = case (isolateWhere (\(_,pr,_) -> str `matchedBy` pr) ws) of
+            process' (Right str) = case (isolateWhere (\(_,pr,_) -> pr str) ws) of
                                      (Nothing,ws') -> return ws'
                                      (Just (cmd,pr,res), ws') -> do
                                        putMVar res str
@@ -46,12 +46,6 @@ isolateWhere p [] = (Nothing,[])
 isolateWhere p (l:ls) | p l = (Just l,ls)
                           | otherwise = (l', l:ls')
                           where (l',ls') = isolateWhere p ls
-
-matchedBy :: String -> Parser Bool -> Bool
-matchedBy str pr = case (parse pr "" str) of
-                     Left _ -> False
-                     Right x -> x
-                                                                    
 
 portWatcher :: Handle -> SerialManager -> IO ThreadId
 portWatcher h m = forkIO portWatcher'
@@ -81,9 +75,9 @@ portWatcher h m = forkIO portWatcher'
 
 wrapCommand :: String        -- ^ The end of line character for this port
             -> String        -- ^ The command to send
-            -> Parser Bool   -- ^ The parser to recognize the returning value
+            -> (String -> Bool)   -- ^ The predicate to recognize the returning value
             -> SerialManager -- ^ The serial port to access
-            -> IO String     -- ^ The return value
+            -> IO String     -- ^ The response from the port
 wrapCommand eol cmd pr mgr = do
   mv <- newEmptyMVar
   tryTakeMVar mv >> return ()

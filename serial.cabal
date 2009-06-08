@@ -13,5 +13,5 @@ extra-source-files: README
 
 Library
   build-depends:       base, unix, parsec
-  Exposed-Modules: System.Serial System.Serial.Manager
+  Exposed-Modules: System.Serial System.Serial.Manager System.Serial.BlockingManager
   ghc-options:         -threaded

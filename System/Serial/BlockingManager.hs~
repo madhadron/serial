@@ -1,0 +1,23 @@
+module System.Serial.BlockingManager (serialManager, wrapCommand, BlockingSerialManager, BlockingSerialCommand) where
+
+import System.IO
+import Control.Concurrent
+import Control.Concurrent.MVar
+import Control.Monad
+
+type BlockingSerialCommand = (String, MVar String)
+type BlockingSerialManager = MVar (Either BlockingSerialCommand String)
+
+serialManager :: Handle -> IO BlockingSerialManager
+serialManager h timeout = do mv <- newEmptyMVar
+                     forkIO (foldM_ (process h mv timeout) [] (repeat ()))
+                     return mv
+
+process h mv timeout _ = do cmd <- takeMVar mv
+                    hPutStr h cmd
+                    r <- hWaitForInput h timeout
+                    if r then fetchLines h else error "Timed out on command: " ++ cmd
+
+fetchLines h = do st <- hReady h
+                  if st then (\x -> return x ++ fetchLines h) =<< hGetLine
+                  else return ""
