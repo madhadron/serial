@@ -1,5 +1,5 @@
 name:                serial
-version:             0.2
+version:             0.2.1
 synopsis:            POSIX serial port wrapper
 description:         Provides a clean interface to working with POSIX serial ports in Haskell
 category:            System

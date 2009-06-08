@@ -37,13 +37,14 @@ process h mv ws _ = do
                                               return $ ws ++ [(cmd,pr,res)]
             process' (Right str) = case (isolateWhere (\(_,pr,_) -> pr str) ws) of
                                      (Nothing,ws') -> return ws'
-                                     (Just (cmd,pr,res), ws') -> do
+                                     (Just (_,_,res), ws') -> do
                                        putMVar res str
                                        return ws'
 
-isolateWhere p [] = (Nothing,[])
+isolateWhere :: (a -> Bool) -> [a] -> (Maybe a, [a])
+isolateWhere _ [] = (Nothing,[])
 isolateWhere p (l:ls) | p l = (Just l,ls)
-                          | otherwise = (l', l:ls')
+                      | otherwise = (l', l:ls')
                           where (l',ls') = isolateWhere p ls
 
 portWatcher :: Handle -> SerialManager -> IO ThreadId
