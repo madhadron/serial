@@ -7,7 +7,6 @@
 module System.Serial.Manager (serialManager, wrapCommand, SerialManager, SerialCommand) where
 
 import System.IO
-import Text.ParserCombinators.Parsec
 import Control.Concurrent
 import Control.Concurrent.MVar
 import Control.Monad

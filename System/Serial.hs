@@ -22,7 +22,6 @@ module System.Serial (openSerial, StopBits(One,Two), Parity(Even,Odd,NoParity), 
 import System.Posix.IO
 import System.Posix.Terminal
 import Control.Monad
-import System.Posix.Types
 import System.IO
 
 -- | "Serial" lets the user set the number of stop bits, the parity,
@@ -50,7 +49,7 @@ openSerial :: String       -- ^ The filename of the serial port, such as @/dev/t
            -> Parity       
            -> FlowControl
            -> IO Handle
-openSerial dev baud bitsPerByte stopBits parity flow = do
+openSerial dev baud bPerB stopBits parity flow = do
   fd <- openFd dev ReadWrite Nothing 
         OpenFileFlags { append = True,
                         exclusive = False,
@@ -59,7 +58,7 @@ openSerial dev baud bitsPerByte stopBits parity flow = do
                         trunc = False }
   termOpts <- getTerminalAttributes fd
   let termOpts' = configureSettings termOpts baud 
-                  bitsPerByte stopBits parity flow
+                  bPerB stopBits parity flow
   setTerminalAttributes fd termOpts' Immediately
   h <- fdToHandle fd
   hSetBuffering h LineBuffering
@@ -71,12 +70,14 @@ openSerial dev baud bitsPerByte stopBits parity flow = do
 -- rest are set through a rather awkward enterface, which I wrap here
 -- in easier to use commands.
 
+withParity :: TerminalAttributes -> Parity -> TerminalAttributes
 withParity termOpts Even = termOpts `withMode` EnableParity 
                           `withoutMode` OddParity
 withParity termOpts Odd = termOpts `withMode` EnableParity
                          `withMode` OddParity
 withParity termOpts NoParity = termOpts `withoutMode` EnableParity
 
+withFlowControl :: TerminalAttributes -> FlowControl -> TerminalAttributes
 withFlowControl termOpts NoFlowControl = termOpts
                                          `withoutMode` StartStopInput
                                          `withoutMode` StartStopOutput
@@ -84,16 +85,18 @@ withFlowControl termOpts Software = termOpts
                                     `withMode` StartStopInput
                                     `withMode` StartStopOutput
 
+withStopBits :: TerminalAttributes -> StopBits -> TerminalAttributes
 withStopBits termOpts One = termOpts `withoutMode` TwoStopBits
 withStopBits termOpts Two = termOpts `withMode` TwoStopBits
 
 -- All these are now used in a function which properly sets up the
 -- serial port properties in the struct.
 
-configureSettings termOpts baud bitsPerByte stopBits parity flow =
+configureSettings :: TerminalAttributes -> BaudRate -> Int -> StopBits -> Parity -> FlowControl -> TerminalAttributes
+configureSettings termOpts baud bPerB stopBits parity flow =
     termOpts `withInputSpeed` baud
                  `withOutputSpeed` baud
-                 `withBits` bitsPerByte
+                 `withBits` bPerB
                  `withStopBits` stopBits
                  `withParity` parity
                  `withFlowControl` flow
