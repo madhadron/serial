@@ -1,13 +1,15 @@
--- | Serial provides line-oriented access to serial ports on POSIX
--- compatible systems.  If you need low level access,
--- character-at-a-time reading and writing, or other such
--- procedures, you need to access the serial port directly; this
--- library won't help you.  However, most devices hanging off of
--- serial ports today work by reading and writing commands.  In many
--- cases, commands are non-blocking and you can send additional
--- commands before you receive the response to the last one.
--- "System.Serial.SerialManager" provides a wrapper around this
--- access which tries to match up responses to waiting functions
+-- | Serial provides access to serial ports on POSIX compatible
+-- systems.  The utility functions in "System.Serial" are in
+-- line-at-a-time mode by default, but you can set other, more raw
+-- modes with 'hSetBuffering' from "System.IO".  The serial port
+-- managers in "System.Serial.Manager" and
+-- "System.Serial.BlockingManager" only work with line-at-a-time mode.
+-- 
+-- Most devices hanging off of serial ports today work by reading and
+-- writing commands.  In many cases, commands are non-blocking and you
+-- can send additional commands before you receive the response to the
+-- last one.  "System.Serial.SerialManager" provides a wrapper around
+-- this access which tries to match up responses to waiting functions
 -- which have called it.
 -- 
 -- The only function here is 'openSerial', since thereafter the normal
