@@ -19,7 +19,8 @@
 -- just LF, others just CR, and they may return their results using a
 -- different end of line than they accept.
 
-module System.Serial (openSerial, StopBits(One,Two), Parity(Even,Odd,NoParity), FlowControl(Software,NoFlowControl)) where
+module System.Serial (openSerial, StopBits(One,Two), Parity(Even,Odd,NoParity), FlowControl(Software,NoFlowControl),
+                     module System.Posix.Terminal) where
 
 import System.Posix.IO
 import System.Posix.Terminal
@@ -37,6 +38,26 @@ data Parity = Even | Odd | NoParity
 data FlowControl = Software | NoFlowControl
 
 
+setSerial :: String       
+           -> BaudRate     
+           -> Int          
+           -> StopBits     
+           -> Parity       
+           -> FlowControl
+           -> IO ()
+setSerial dev baud bPerB stopBits parity flow = do
+  fd <- openFd dev ReadWrite Nothing 
+        OpenFileFlags { append = True,
+                        exclusive = True,
+                        noctty = True,
+                        nonBlock = True,
+                        trunc = False }
+  termOpts <- getTerminalAttributes fd
+  let termOpts' = configureSettings termOpts baud 
+                  bPerB stopBits parity flow
+  setTerminalAttributes fd termOpts' Immediately
+  closeFd fd
+
 -- | 'openSerial' opens the serial port and sets the options the user
 -- passes, makes its buffering line oriented, and returns the handle
 -- to control it.  For example, an Olympus IX-81 microscope attached
@@ -44,6 +65,7 @@ data FlowControl = Software | NoFlowControl
 -- 
 -- > openSerial "/dev/ttyS0" B19200 8 One Even Software
 -- 
+
 openSerial :: String       -- ^ The filename of the serial port, such as @/dev/ttyS0@
            -> BaudRate     
            -> Int          -- ^ The number of bits per word, typically 8
@@ -52,19 +74,16 @@ openSerial :: String       -- ^ The filename of the serial port, such as @/dev/t
            -> FlowControl
            -> IO Handle
 openSerial dev baud bPerB stopBits parity flow = do
-  fd <- openFd dev ReadWrite Nothing 
-        OpenFileFlags { append = True,
-                        exclusive = False,
-                        noctty = True,
-                        nonBlock = False,
-                        trunc = False }
-  termOpts <- getTerminalAttributes fd
-  let termOpts' = configureSettings termOpts baud 
-                  bPerB stopBits parity flow
-  setTerminalAttributes fd termOpts' Immediately
-  h <- fdToHandle fd
-  hSetBuffering h LineBuffering
+  -- Messing with Fd settings makes GHC's IO system unhappy
+  -- so in setSerial we open the Fd, set up the terminal,
+  -- and close it again.
+  setSerial dev baud bPerB stopBits parity flow
+  h <- openFile dev ReadWriteMode
+  -- Since some devices return \r, not \n, at the end of lines,
+  -- we can't use the OS's line-based buffering
+  hSetBuffering h NoBuffering 
   return h
+
 
 
 -- System.Posix.Terminal defines a couple of commands to set options
